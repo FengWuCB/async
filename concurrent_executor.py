@@ -16,6 +16,7 @@ task1 = pool.submit(task, URLS[0])
 task2 = pool.submit(task, URLS[0])
 # task3的网址是错误的
 task3 = pool.submit(task, URLS[3])
+# 如果前面3个task没有完成，那么task4会变为pending的状态
 task4 = pool.submit(task, URLS[0])
 print(task4.result())
 # 在这之前，没有实际调用task3.result(), 没有抛错
@@ -24,6 +25,7 @@ try:
 except Exception:
     print("task3 fail")
 # 就算pool中有task fail，也可以被shutdown
+# shutdown(wait=True)是默认值，如果有任务未完成，会阻塞
 pool.shutdown()  # 用完之后要自己shutdown，用with的话会系统会自己处理
 try:
     task5 = pool.submit(task, URLS[0])
