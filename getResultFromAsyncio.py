@@ -6,8 +6,11 @@ import time
 
 
 url = 'http://sina.com'
-aio_num = 1100
-headers = {"Authorization": 'Bearer eyJhbGciOiJIUzI1NiIsImlhdCI6MTUxNjMyNzQyNSwiZXhwIjoxNTE2MzMxMDI1fQ.eyJ0b2tlbl9pZCI6N30.zF1QZ2N_QkOoQfWfDVK_Vigh3DtWq_2W-b5hrtzHH3Q'}
+aio_num = 20
+headers = {
+    "Authorization": 'Bearer eyJhbGciOiJIUzI1NiIsImlhdCI6MTUxNjUzNTcwNiwiZXhwIjoxNTE2NTM5MzA2fQ.eyJpZCI6MX0.qj6bHfrKPyhkrbww3lrCLtiBqBOPiu29XAEFO_1ztcY',
+    "User-Agent":"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36"
+}
 
 
 # async def getIndex(url):
