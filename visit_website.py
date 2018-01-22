@@ -3,12 +3,14 @@
 import asyncio
 import aiohttp
 import time
+import sys
 
 
 url = 'http://sina.com'
-aio_num = 20
+# url = "http://127.0.0.1:8090"
+aio_num = 200
 headers = {
-    "Authorization": 'Bearer eyJhbGciOiJIUzI1NiIsImlhdCI6MTUxNjUzNTcwNiwiZXhwIjoxNTE2NTM5MzA2fQ.eyJpZCI6MX0.qj6bHfrKPyhkrbww3lrCLtiBqBOPiu29XAEFO_1ztcY',
+    "Authorization": 'Bearer eyJhbGciOiJIUzI1NiIsImlhdCI6MTUxNjYxMzY0OCwiZXhwIjoxNTI1MjUzNjQ4fQ.eyJpZCI6MX0.zjWlBLFBAGmDvmAqWgdZ1Y2ygGoS5SpNiiTdCIFXmWs',
     "User-Agent":"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36"
 }
 
@@ -19,7 +21,7 @@ headers = {
             # return await response.text()
 
 
-loop = asyncio.get_event_loop()
+# loop = asyncio.get_event_loop()
 
 #### first method to get result
 # tasks = []
@@ -62,17 +64,23 @@ async def getUrl(session, url, **kwargs):
     async with session.get(url, **kwargs) as res:
         return await res.text()
 
-tasks = []
-try:
-    session = aiohttp.ClientSession()
-    for _ in range(aio_num):
-        tasks.append(getUrl(session, url, headers=headers))
-    start_time = time.time()
-    results = loop.run_until_complete(asyncio.gather(*tasks))
-finally:
-    session.close()
-print(results[0])
-print("time cost: %s" % (time.time() - start_time))
+def aiovisit(url, headers, aio_num, loop):
+    tasks = []
+    with aiohttp.ClientSession() as session:
+        for _ in range(aio_num):
+            tasks.append(getUrl(session, url, headers=headers))
+        start_time = time.time()
+        results = loop.run_until_complete(asyncio.gather(*tasks))
+    print(results[0])
+    print("time cost: %s" % (time.time() - start_time))
+
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    if len(sys.argv) == 2:
+        url = sys.argv[1]
+    aiovisit(url, headers, aio_num, loop)
+    loop.close()
 
 
 ### can't do
