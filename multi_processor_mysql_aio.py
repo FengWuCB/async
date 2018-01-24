@@ -28,11 +28,15 @@ class MultiProcessMysql(object):
     """用多进程和协程处理MySQL数据"""
 
     def __init__(self, workers=2, start=0, end=2000):
-        self.host = "192.168.12.35"
+        self.host = "192.168.12.34"
         self.port = 3306
         self.user = "root"
-        self.password = "123456"
-        self.db = "civil"
+        self.password = "root"
+        self.db = "laws_doc"
+        self.origin_table = 'judgment_main_etl'
+        self.dest_table = 'laws_finance1'
+        self.s_sql = f"select uuid, court_idea, judge_result, reason from {self.origin_table} where %s<=id and id<%s;"
+        self.i_sql = f"insert into {self.dest_table} (uuid, title, reason, keyword) values (%s, %s, %s, %s)"
 
         self.pool = 20    # 协程数和MySQL连接数
         self.aionum = self.pool
@@ -82,7 +86,7 @@ class MultiProcessMysql(object):
                         tmp_end = end
                     print("aio start: %s, end: %s" % (start, tmp_end))
                     # <=id 和 id<
-                    await cur.execute("select uuid, title, party_info, trial_process, plt_claim, dft_rep, crs_exm, court_find, court_idea, judge_result, reason from judgment_civil_56w where %s<=id and id<%s;", (start, tmp_end))
+                    await cur.execute(self.s_sql, (start, tmp_end))
                     datas = await cur.fetchall()
                     uuids = []
                     for data in datas:
@@ -97,7 +101,7 @@ class MultiProcessMysql(object):
                                 # print(keyword)
                                 uuids.append(
                                     (data.uuid, data.title, data.reason, keyword))
-                    await cur.executemany("insert into civil_finance (uuid, title, reason, keyword) values (%s, %s, %s, %s)", uuids)
+                    await cur.executemany(self.i_sql, uuids)
                     await conn.commit()
                     start = tmp_end
 
@@ -129,5 +133,5 @@ class MultiProcessMysql(object):
 
 
 if __name__ == "__main__":
-    mp = MultiProcessMysql(workers=2, end=560000)
+    mp = MultiProcessMysql(workers=3, end=2631000)
     mp.run()
