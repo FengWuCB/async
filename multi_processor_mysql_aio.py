@@ -2,10 +2,12 @@
 
 import time
 import asyncio
+import random
 from concurrent.futures import ProcessPoolExecutor as Pool
 
 import aiomysql
 from flashtext import KeywordProcessor
+import click
 
 
 class AttrDict(dict):
@@ -27,18 +29,19 @@ class AttrDictCursor(aiomysql.DictCursor):
 class MultiProcessMysql(object):
     """用多进程和协程处理MySQL数据"""
 
-    def __init__(self, workers=2, start=0, end=2000):
+    def __init__(self, workers=2, pool=10, start=0, end=2000):
+        """第一段的参数需要跟随需求变动"""
         self.host = "192.168.12.34"
         self.port = 3306
         self.user = "root"
         self.password = "root"
-        self.db = "laws_doc"
-        self.origin_table = 'judgment_main_etl'
-        self.dest_table = 'laws_finance1'
+        self.db = "laws_doc2"
+        self.origin_table = 'judgment2_main_etl'
+        self.dest_table = 'laws_finance_test'
         self.s_sql = f"select uuid, court_idea, judge_result, reason from {self.origin_table} where %s<=id and id<%s;"
         self.i_sql = f"insert into {self.dest_table} (uuid, title, reason, keyword) values (%s, %s, %s, %s)"
 
-        self.pool = 20    # 协程数和MySQL连接数
+        self.pool = pool    # 协程数和MySQL连接数
         self.aionum = self.pool
         self.step = 2000  # 一次性从MySQL拉取的行数
         self.workers = workers  # 进程数
@@ -78,6 +81,9 @@ class MultiProcessMysql(object):
 
     async def findKeyword(self, db, start, end):
         """从MySQL数据中匹配出关键字"""
+        # 随机休息一定时间，防止数据同时到达，同时处理, 应该是一部分等待,一部分处理
+        await asyncio.sleep(random.random() * self.workers * 2)
+        print("coroutine start")
         async with db.acquire() as conn:
             async with conn.cursor() as cur:
                 while start < end:
@@ -108,6 +114,7 @@ class MultiProcessMysql(object):
     def singleProcess(self, start, end):
         """单个进程的任务"""
         loop = asyncio.get_event_loop()
+        # 为每个进程创建一个pool
         db = loop.run_until_complete(asyncio.ensure_future(
             self.createMysqlPool(loop)))
 
@@ -132,6 +139,18 @@ class MultiProcessMysql(object):
         print("total time: %s" % (time.time() - start_time))
 
 
-if __name__ == "__main__":
-    mp = MultiProcessMysql(workers=3, end=2631000)
+@click.command(help="运行")
+@click.option("-w", "--workers", default=2, help="进程数")
+@click.option('-p', "--pool", default=10, help="协程数")
+@click.option('-s', '--start', default=0, help='MySQL开始的id')
+@click.option('-e', "--end", default=60000, help="MySQL结束的id")
+def main(workers, pool, start, end):
+    mp = MultiProcessMysql(workers=workers, pool=pool, start=start, end=end)
+    if workers * pool > 100:
+        if not click.confirm('MySQL连接数超过100(%s)，确认吗?' % (workers * pool)):
+            return
     mp.run()
+
+
+if __name__ == "__main__":
+    main()
