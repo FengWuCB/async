@@ -36,9 +36,13 @@ class MultiProcessMysql(object):
         self.user = "root"
         self.password = "root"
         self.db = "laws_doc2"
-        self.origin_table = 'judgment2_main_etl'
-        self.dest_table = 'laws_finance_test'
-        self.s_sql = f"select uuid, court_idea, judge_result, reason from {self.origin_table} where %s<=id and id<%s;"
+        self.origin_table = 'judgment2'  # part_v2
+        self.dest_table = 'laws_finance2'
+        self.s_sql = f"select uuid, title, party_info, trial_process, court_find from {self.origin_table} where %s<=id and id<%s;"
+        # self.origin_table = "judgment2_main_etl"  # main
+        # self.dest_table = "laws_finance1"
+        # self.s_sql = f"select uuid, court_idea, judge_result, reason, plt_claim, dft_rep, crs_exm from {self.origin_table} where %s<=id and id<%s;"
+
         self.i_sql = f"insert into {self.dest_table} (uuid, title, reason, keyword) values (%s, %s, %s, %s)"
 
         self.pool = pool    # 协程数和MySQL连接数
@@ -48,11 +52,12 @@ class MultiProcessMysql(object):
         self.start = start  # MySQL开始的行数
         self.end = end  # MySQL结束的行数
 
-        self.keyword = ["庞氏骗局", "非法集资", "高额回报", "快速致富", "非法从事资金清算", "高息揽储",
-                        "供应链金融", "网络传销", "虚拟货币传销", "网络借贷", "股权众筹", "第三方支付", "小额贷款",
-                        "股权融资", "非法吸收公众存款", "高息诱饵", "虚构借贷协议", "高回报", "虚构投资项目", "资金池",
-                        "集资诈骗", "期限错配", "投资欺诈", "平台洗钱", "网络保险", "网络信托", "资金错配", "虚构项目",
-                        "虚假信息诈骗", "P2P", "p2p"]
+        # self.keyword = ["庞氏骗局", "非法集资", "高额回报", "快速致富", "非法从事资金清算", "高息揽储",
+                        # "供应链金融", "网络传销", "虚拟货币传销", "网络借贷", "股权众筹", "第三方支付", "小额贷款",
+                        # "股权融资", "非法吸收公众存款", "高息诱饵", "虚构借贷协议", "高回报", "虚构投资项目", "资金池",
+                        # "集资诈骗", "期限错配", "投资欺诈", "平台洗钱", "网络保险", "网络信托", "资金错配", "虚构项目",
+                        # "虚假信息诈骗", "P2P", "p2p"]
+        self.keyword = ['非法经营支付业务', '网络洗钱', '资金池', '支付牌照', '清洁算', '网络支付', '网上支付', '移动支付', '聚合支付', '保本保息', '担保交易', '供应链金融', '网贷', '网络借贷', '网络投资', '虚假标的', '自融', '资金池', '关联交易', '庞氏骗局', '网络金融理财', '线上投资理财', '互联网私募', '互联网股权', '非法集资', '合同欺诈', '众筹投资', '股权转让', '互联网债权转让', '资本自融', '投资骗局', '洗钱', '非法集资', '网络传销', '虚拟币泡沫', '网络互助金融', '金融欺诈', '网上银行', '信用卡盗刷', '网络钓鱼', '信用卡信息窃取', '网上洗钱', '洗钱诈骗', '数字签名更改', '支付命令窃取', '金融诈骗', '引诱投资', '隐瞒项目信息', '风险披露', '夸大收益', '诈骗保险金', '非法经营保险业务', '侵占客户资金', '征信报告窃取', '金融诈骗', '破坏金融管理']
         self.kp = KeywordProcessor()
         self.kp.add_keywords_from_list(self.keyword)
 
@@ -103,7 +108,7 @@ class MultiProcessMysql(object):
                             keyword = self.kp.extract_keywords(
                                 " ".join(data.values()))
                             if keyword:
-                                keyword = ' '.join(keyword)
+                                keyword = ' '.join(set(keyword))   # 对关键字去重
                                 # print(keyword)
                                 uuids.append(
                                     (data.uuid, data.title, data.reason, keyword))
